@@ -1,4 +1,6 @@
+using Core.Abstractions;
 using Core.EF;
+using Core.Models;
 using Core.Options;
 using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,8 +30,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 //builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<DataContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.Configure<PasswordOptions>(builder.Configuration.GetSection(nameof(PasswordOptions)));
 
+builder.Services.AddSingleton(typeof(IRepository<>), typeof(BaseRepository<>));
 builder.Services.AddSingleton<IAuthService, AuthService>();
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
 
 var app = builder.Build();
 

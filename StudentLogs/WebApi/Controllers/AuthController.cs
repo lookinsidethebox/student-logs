@@ -24,6 +24,9 @@ namespace WebApi.Controllers
 			{
 				var token = _authService.Login(email, password);
 
+				if (string.IsNullOrEmpty(token))
+					throw new Exception();
+
 				var json = new
 				{
 					access_token = token,
