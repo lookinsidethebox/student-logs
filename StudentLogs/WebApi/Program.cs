@@ -1,6 +1,7 @@
+using Core.Options;
+using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using WebApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,15 +13,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = AuthOptions.ISSUER,
+        ValidIssuer = IdentityOptions.ISSUER,
         ValidateAudience = true,
-        ValidAudience = AuthOptions.AUDIENCE,
+        ValidAudience = IdentityOptions.AUDIENCE,
         ValidateLifetime = true,
-        IssuerSigningKey = AuthOptions.GetSymmetricSecurityKey(),
+        IssuerSigningKey = IdentityOptions.GetSymmetricSecurityKey(),
         ValidateIssuerSigningKey = true
     };
 });
 //builder.Services.AddAuthorization();
+
+builder.Services.AddSingleton<IAuthService, AuthService>();
 
 var app = builder.Build();
 

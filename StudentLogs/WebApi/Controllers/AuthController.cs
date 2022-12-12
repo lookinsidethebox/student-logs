@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Core.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace WebApi.Controllers
 {
@@ -11,20 +9,33 @@ namespace WebApi.Controllers
 	[AllowAnonymous]
 	public class AuthController : ControllerBase
 	{
+		private readonly IAuthService _authService;
+
+		public AuthController(IAuthService authService)
+		{
+			_authService = authService;
+		}
+
 		[HttpGet]
 		[Route("login")]
-		public string Login(string email, string password)
+		public IActionResult Login(string email, string password)
 		{
-			var claims = new List<Claim> { new Claim(ClaimTypes.Email, email) };
+			try
+			{
+				var token = _authService.Login(email, password);
 
-			var jwt = new JwtSecurityToken(
-					issuer: AuthOptions.ISSUER,
-					audience: AuthOptions.AUDIENCE,
-					claims: claims,
-					expires: DateTime.UtcNow.Add(TimeSpan.FromDays(1)),
-					signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+				var json = new
+				{
+					access_token = token,
+					username = email
+				};
 
-			return new JwtSecurityTokenHandler().WriteToken(jwt);
+				return new JsonResult(json);
+			}
+			catch
+			{
+				return Unauthorized();
+			}
 		}
 	}
 }
