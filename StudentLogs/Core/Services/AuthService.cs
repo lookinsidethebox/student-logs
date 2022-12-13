@@ -10,7 +10,7 @@ namespace Core.Services
 {
 	public interface IAuthService
 	{
-		string Login(string email, string password);
+		string Login(string email, string password, out string role);
 	}
 
 	public class AuthService : IAuthService
@@ -25,7 +25,7 @@ namespace Core.Services
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 		}
 
-		public string Login(string email, string password)
+		public string Login(string email, string password, out string role)
 		{
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -42,14 +42,16 @@ namespace Core.Services
 				if (!passwordIsValid)
 					throw new Exception();
 
-				return GenerateToken(email, user.Role.ToString());
+				role = user.Role.ToString();
+
+				return GenerateToken(email, role);
 			}
 		}
 
 		private string GenerateToken(string email, string role)
 		{
 			var claims = new List<Claim> {
-				new Claim(ClaimTypes.Email, email),
+				new Claim(ClaimTypes.Name, email),
 				new Claim(ClaimsIdentity.DefaultRoleClaimType, role)
 			};
 

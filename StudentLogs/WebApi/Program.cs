@@ -1,12 +1,14 @@
 using Core.Abstractions;
 using Core.EF;
+using Core.Entities;
 using Core.Helpers;
-using Core.Models;
-using Core.Options;
 using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using IdentityOptions = Core.Options.IdentityOptions;
+using PasswordOptions = Core.Models.PasswordOptions;
 
 var builder = WebApplication.CreateBuilder(args);
 

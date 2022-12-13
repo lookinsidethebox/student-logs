@@ -74,11 +74,20 @@ namespace WebApi.Controllers
 		{
 			try
 			{
+				if (string.IsNullOrEmpty(data.Email))
+					throw new Exception();
+
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 				using (var db = new DataContext(options))
 				{
-					var user = new User
+					var repo = new BaseRepository<User>(db);
+					var user = repo.GetByPredicate(x => x.Email == data.Email).FirstOrDefault();
+
+					if (user != null)
+						throw new Exception();
+
+					var newUser = new User
 					{
 						FirstName = data.FirstName,
 						LastName = data.LastName,
@@ -88,8 +97,7 @@ namespace WebApi.Controllers
 						SortType = data.SortType.HasValue ? (SortType)data.SortType.Value : SortType.NotSet
 					};
 
-					var repo = new BaseRepository<User>(db);
-					await repo.CreateAsync(user);
+					await repo.CreateAsync(newUser);
 					return Ok();
 				}
 			}
@@ -131,6 +139,9 @@ namespace WebApi.Controllers
 		{
 			try
 			{
+				if (string.IsNullOrEmpty(data.Email))
+					throw new Exception();
+
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 				using (var db = new DataContext(options))
