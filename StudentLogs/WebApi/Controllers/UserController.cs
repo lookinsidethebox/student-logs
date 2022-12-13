@@ -1,6 +1,7 @@
 ﻿using Core.EF;
 using Core.Entities;
 using Core.Enums;
+using Core.Helpers;
 using Core.Models;
 using Core.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,13 @@ namespace WebApi.Controllers
 	public class UserController : ControllerBase
 	{
 		private readonly IPasswordService _passwordService;
+		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
 
-		public UserController(IPasswordService passwordService)
+		public UserController(IPasswordService passwordService,
+			IDataContextOptionsHelper dataContextOptionsHelper)
 		{
 			_passwordService = passwordService;
+			_dataContextOptionsHelper = dataContextOptionsHelper;
 		}
 
 		[HttpGet]
@@ -23,7 +27,9 @@ namespace WebApi.Controllers
 		{
 			try
 			{
-				using (var db = new DataContext())
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
 					var users = await repo.GetAsync();
@@ -37,11 +43,14 @@ namespace WebApi.Controllers
 		}
 
 		[HttpGet]
-		public async Task<IActionResult> GetAsync(int id)
+		[Route("byId")]
+		public async Task<IActionResult> GetByIdAsync(int id)
 		{
 			try
 			{
-				using (var db = new DataContext())
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
 					var user = await repo.GetByIdAsync(id);
@@ -59,11 +68,13 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync(UserModel data)
+		public async Task<IActionResult> PostAsync([FromForm] UserModel data)
 		{
 			try
 			{
-				using (var db = new DataContext())
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
 				{
 					var user = new User
 					{
@@ -88,11 +99,13 @@ namespace WebApi.Controllers
 
 		[HttpPost]
 		[Route("password")]
-		public async Task<IActionResult> ChangePasswordAsync(PasswordModel data)
+		public async Task<IActionResult> ChangePasswordAsync([FromForm] PasswordModel data)
 		{
 			try
 			{
-				using (var db = new DataContext())
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
 					var user = await repo.GetByIdAsync(data.UserId);
@@ -112,11 +125,13 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPut]
-		public async Task<IActionResult> PutAsync(UserModel data)
+		public async Task<IActionResult> PutAsync([FromForm] UserModel data)
 		{
 			try
 			{
-				using (var db = new DataContext())
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
 					var user = await repo.GetByIdAsync(data.Id);
@@ -144,7 +159,9 @@ namespace WebApi.Controllers
 		{
 			try
 			{
-				using (var db = new DataContext())
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
 					await repo.DeleteAsync(id);

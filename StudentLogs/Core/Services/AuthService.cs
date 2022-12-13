@@ -1,5 +1,6 @@
 ﻿using Core.EF;
 using Core.Entities;
+using Core.Helpers;
 using Core.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,15 +16,20 @@ namespace Core.Services
 	public class AuthService : IAuthService
 	{
 		private readonly IPasswordService _passwordService;
+		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
 
-		public AuthService(IPasswordService passwordService)
+		public AuthService(IPasswordService passwordService,
+			IDataContextOptionsHelper dataContextOptionsHelper)
 		{
 			_passwordService = passwordService;
+			_dataContextOptionsHelper = dataContextOptionsHelper;
 		}
 
 		public string Login(string email, string password)
 		{
-			using (var db = new DataContext())
+			var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+			using (var db = new DataContext(options))
 			{
 				var repo = new BaseRepository<User>(db);
 				var user = repo.GetByPredicate(x => x.Email == email).FirstOrDefault();
