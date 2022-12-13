@@ -4,12 +4,14 @@ using Core.Enums;
 using Core.Helpers;
 using Core.Models;
 using Core.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
 	[ApiController]
 	[Route("user")]
+	[Authorize(Roles = "Admin")]
 	public class UserController : ControllerBase
 	{
 		private readonly IPasswordService _passwordService;

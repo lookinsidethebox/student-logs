@@ -41,14 +41,17 @@ namespace Core.Services
 
 				if (!passwordIsValid)
 					throw new Exception();
-			}
 
-			return GenerateToken(email);
+				return GenerateToken(email, user.Role.ToString());
+			}
 		}
 
-		private string GenerateToken(string email)
+		private string GenerateToken(string email, string role)
 		{
-			var claims = new List<Claim> { new Claim(ClaimTypes.Email, email) };
+			var claims = new List<Claim> {
+				new Claim(ClaimTypes.Email, email),
+				new Claim(ClaimsIdentity.DefaultRoleClaimType, role)
+			};
 
 			var jwt = new JwtSecurityToken(
 					issuer: IdentityOptions.ISSUER,
