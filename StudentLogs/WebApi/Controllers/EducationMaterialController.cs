@@ -1,0 +1,162 @@
+﻿using Core.EF;
+using Core.Entities;
+using Core.Enums;
+using Core.Helpers;
+using Core.Models;
+using Core.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace WebApi.Controllers
+{
+	[ApiController]
+	[Route("material")]
+	[Authorize(Roles = "Admin")]
+	public class EducationMaterialController : ControllerBase
+	{
+		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
+		private readonly ILogger<EducationMaterialController> _logger;
+
+		public EducationMaterialController(IDataContextOptionsHelper dataContextOptionsHelper,
+			ILogger<EducationMaterialController> logger)
+		{
+			_dataContextOptionsHelper = dataContextOptionsHelper;
+			_logger = logger;
+		}
+
+		[HttpGet]
+		public async Task<IActionResult> GetAsync()
+		{
+			try
+			{
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					var materials = await repo.GetAsync();
+					return Ok(materials.OrderBy(x => x.Order));
+				}
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest();
+			}
+		}
+
+		[HttpPost]
+		public async Task<IActionResult> PostAsync([FromForm] EducationMaterialModel data)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(data.Title) || data.Type == (int)EducationMaterialType.NotSet)
+					throw new Exception("Не заданы обязательные поля Title и Type");
+
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+
+					var material = new EducationMaterial
+					{
+						Title = data.Title,
+						Description = data.Description,
+						Type = (EducationMaterialType)data.Type,
+						IsFirst = data.IsFirst,
+						IsFinal = data.IsFinal,
+						SurveyId = data.SurveyId,
+						Text = data.Text,
+						//FilePath = ""
+					};
+
+					var repo = new BaseRepository<EducationMaterial>(db);
+					await repo.CreateAsync(material);
+					return Ok();
+				}
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
+			}
+		}
+
+		//[HttpPost]
+		//[Route("order")]
+		//public async Task<IActionResult> ChangeOrderAsync()
+		//{
+		//	try
+		//	{
+		//		var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+		//		using (var db = new DataContext(options))
+		//		{
+		//			var repo = new BaseRepository<EducationMaterial>(db);
+		//			return Ok();
+		//		}
+		//	}
+		//	catch
+		//	{
+		//		return BadRequest();
+		//	}
+		//}
+
+		[HttpPut]
+		public async Task<IActionResult> PutAsync([FromForm] EducationMaterialModel data)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(data.Title))
+					throw new Exception("Не задано обязательное поле Title");
+
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					var material = await repo.GetByIdAsync(data.Id);
+
+					if (material == null)
+						throw new Exception($"Учебный материал с id = {data.Id} не найден");
+
+					material.Title = data.Title;
+					material.Description = data.Description;
+					material.IsFirst = data.IsFirst;
+					material.IsFinal = data.IsFinal;
+					material.SurveyId = data.SurveyId;
+					material.Text = data.Text;
+					//material.FilePath = "";
+					await repo.UpdateAsync(material);
+					return Ok();
+				}
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
+			}
+		}
+
+		[HttpDelete]
+		public async Task<IActionResult> DeleteAsync(int id)
+		{
+			try
+			{
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					await repo.DeleteAsync(id);
+					return Ok();
+				}
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest();
+			}
+		}
+	}
+}
