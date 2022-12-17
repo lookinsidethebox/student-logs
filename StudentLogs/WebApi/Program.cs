@@ -1,10 +1,8 @@
 using Core.Abstractions;
 using Core.EF;
-using Core.Entities;
 using Core.Helpers;
 using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using IdentityOptions = Core.Options.IdentityOptions;

@@ -16,12 +16,15 @@ namespace WebApi.Controllers
 	{
 		private readonly IPasswordService _passwordService;
 		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
+		private readonly ILogger<UserController> _logger;
 
 		public UserController(IPasswordService passwordService,
-			IDataContextOptionsHelper dataContextOptionsHelper)
+			IDataContextOptionsHelper dataContextOptionsHelper,
+			ILogger<UserController> logger)
 		{
 			_passwordService = passwordService;
 			_dataContextOptionsHelper = dataContextOptionsHelper;
+			_logger = logger;
 		}
 
 		[HttpGet]
@@ -35,11 +38,12 @@ namespace WebApi.Controllers
 				{
 					var repo = new BaseRepository<User>(db);
 					var users = await repo.GetAsync();
-					return Ok(users);
+					return Ok(users.OrderBy(x => x.Id));
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
+				_logger.LogError(ex, ex.Message);
 				return BadRequest();
 			}
 		}
@@ -58,14 +62,15 @@ namespace WebApi.Controllers
 					var user = await repo.GetByIdAsync(id);
 
 					if (user == null)
-						throw new Exception();
+						throw new Exception($"Пользователь с id = {id} не найден");
 
 					return Ok(user);
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
-				return BadRequest();
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
 			}
 		}
 
@@ -75,7 +80,7 @@ namespace WebApi.Controllers
 			try
 			{
 				if (string.IsNullOrEmpty(data.Email))
-					throw new Exception();
+					throw new Exception("Не задано поле Email");
 
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -85,7 +90,7 @@ namespace WebApi.Controllers
 					var user = repo.GetByPredicate(x => x.Email == data.Email).FirstOrDefault();
 
 					if (user != null)
-						throw new Exception();
+						throw new Exception($"Пользователь с Email = {data.Email} уже существует");
 
 					var newUser = new User
 					{
@@ -101,9 +106,10 @@ namespace WebApi.Controllers
 					return Ok();
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
-				return BadRequest();
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
 			}
 		}
 
@@ -121,16 +127,17 @@ namespace WebApi.Controllers
 					var user = await repo.GetByIdAsync(data.UserId);
 
 					if (user == null)
-						throw new Exception();
+						throw new Exception($"Пользователь с id = {data.UserId} не найден");
 
 					user.PasswordHash = _passwordService.GenerateHash(data.Password);
 					await repo.UpdateAsync(user);
 					return Ok();
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
-				return BadRequest();
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
 			}
 		}
 
@@ -140,7 +147,7 @@ namespace WebApi.Controllers
 			try
 			{
 				if (string.IsNullOrEmpty(data.Email))
-					throw new Exception();
+					throw new Exception("Не задано поле Email");
 
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -150,7 +157,7 @@ namespace WebApi.Controllers
 					var user = await repo.GetByIdAsync(data.Id);
 
 					if (user == null)
-						throw new Exception();
+						throw new Exception($"Пользователь с id = {data.Id} не найден");
 
 					user.FirstName = data.FirstName;
 					user.LastName = data.LastName;
@@ -161,9 +168,10 @@ namespace WebApi.Controllers
 					return Ok();
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
-				return BadRequest();
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
 			}
 		}
 
@@ -181,8 +189,9 @@ namespace WebApi.Controllers
 					return Ok();
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
+				_logger.LogError(ex, ex.Message);
 				return BadRequest();
 			}
 		}

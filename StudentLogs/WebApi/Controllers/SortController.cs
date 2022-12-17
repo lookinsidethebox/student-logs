@@ -11,11 +11,17 @@ namespace WebApi.Controllers
 	[Route("sort")]
 	public class SortController : ControllerBase
 	{
+		private readonly IAuthService _authService;
 		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
+		private readonly ILogger<SortController> _logger;
 
-		public SortController(IDataContextOptionsHelper dataContextOptionsHelper)
+		public SortController(IAuthService authService,
+			IDataContextOptionsHelper dataContextOptionsHelper,
+			ILogger<SortController> logger)
 		{
+			_authService = authService;
 			_dataContextOptionsHelper = dataContextOptionsHelper;
+			_logger = logger;
 		}
 
 		[HttpGet]
@@ -24,22 +30,21 @@ namespace WebApi.Controllers
 			try
 			{
 				var email = HttpContext.User.Identity?.Name;
-				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
-				using (var db = new DataContext(options))
-				{
-					var repo = new BaseRepository<User>(db);
-					var user = repo.GetByPredicate(x => x.Email == email).FirstOrDefault();
+				if (string.IsNullOrEmpty(email))
+					throw new Exception("Не удалось получить Email пользователя");
 
-					if (user == null)
-						throw new Exception();
+				var user = _authService.GetCurrentUser(email);
 
-					return Ok((int)user.SortType);
-				}
+				if (user == null)
+					throw new Exception($"Пользователь с Email = {email} не найден");
+
+				return Ok((int)user.SortType);
 			}
-			catch
+			catch(Exception ex)
 			{
-				return BadRequest();
+				_logger.LogError(ex, ex.Message);
+				return Unauthorized();
 			}
 		}
 
@@ -49,23 +54,33 @@ namespace WebApi.Controllers
 			try
 			{
 				var email = HttpContext.User.Identity?.Name;
+
+				if (string.IsNullOrEmpty(email))
+					throw new UnauthorizedAccessException();
+
+				var user = _authService.GetCurrentUser(email);
+
+				if (user == null)
+					throw new UnauthorizedAccessException();
+
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
-					var user = repo.GetByPredicate(x => x.Email == email).FirstOrDefault();
-
-					if (user == null)
-						throw new Exception();
-
 					user.SortType = (SortType)type;
 					await repo.UpdateAsync(user);
 					return Ok();
 				}
 			}
-			catch
+			catch (UnauthorizedAccessException uae)
 			{
+				_logger.LogError(uae, uae.Message);
+				return Unauthorized();
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
 				return BadRequest();
 			}
 		}

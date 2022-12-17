@@ -11,6 +11,7 @@ namespace Core.Services
 	public interface IAuthService
 	{
 		string Login(string email, string password, out string role);
+		User GetCurrentUser(string email);
 	}
 
 	public class AuthService : IAuthService
@@ -45,6 +46,22 @@ namespace Core.Services
 				role = user.Role.ToString();
 
 				return GenerateToken(email, role);
+			}
+		}
+
+		public User GetCurrentUser(string email)
+		{
+			var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+			using (var db = new DataContext(options))
+			{
+				var repo = new BaseRepository<User>(db);
+				var user = repo.GetByPredicate(x => x.Email == email).FirstOrDefault();
+
+				if (user == null)
+					throw new Exception();
+
+				return user;
 			}
 		}
 
