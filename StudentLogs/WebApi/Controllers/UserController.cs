@@ -38,7 +38,7 @@ namespace WebApi.Controllers
 				{
 					var repo = new BaseRepository<User>(db);
 					var users = await repo.GetAsync();
-					return Ok(users.OrderBy(x => x.Id));
+					return Ok(users.OrderBy(x => x.LastName));
 				}
 			}
 			catch (Exception ex)

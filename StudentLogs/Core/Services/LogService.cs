@@ -1,15 +1,17 @@
 ﻿using Core.EF;
 using Core.Entities;
 using Core.Enums;
+using Core.Extensions;
 using Core.Helpers;
 using Core.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Core.Services
 {
 	public interface ILogService
 	{
-		Task<IEnumerable<Log>> GetLogsAsync(int? materialId = null, int? userId = null);
-		Task CreateLog(LogModel data, int userId);
+		Task<IEnumerable<LogModel>> GetLogsAsync(int? materialId = null, int? userId = null);
+		Task CreateLog(LogItemModel data, int userId);
 	}
 
 	public class LogService : ILogService
@@ -21,30 +23,36 @@ namespace Core.Services
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 		}
 
-		public async Task<IEnumerable<Log>> GetLogsAsync(int? materialId = null, int? userId = null)
+		public async Task<IEnumerable<LogModel>> GetLogsAsync(int? materialId = null, int? userId = null)
 		{
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 			using (var db = new DataContext(options))
 			{
-				var repo = new BaseRepository<Log>(db);
-				IEnumerable<Log> logs;
+				var query = db.Set<Log>().AsNoTracking();
 
-				if (!materialId.HasValue && !userId.HasValue)
-					logs = await repo.GetAsync();
-				else if (materialId.HasValue && userId.HasValue)
-					logs = repo.GetByPredicate(x =>
+				if (materialId.HasValue && userId.HasValue)
+					query = query.Where(x =>
 						x.EducationMaterialId == materialId.Value && x.UserId == userId.Value);
 				else if (materialId.HasValue)
-					logs = repo.GetByPredicate(x => x.EducationMaterialId == materialId.Value);
-				else
-					logs = repo.GetByPredicate(x => x.UserId == userId.Value);
+					query = query.Where(x => x.EducationMaterialId == materialId.Value);
+				else if (userId.HasValue)
+					query = query.Where(x => x.UserId == userId.Value);
 
-				return logs;
+				return await query
+					.Select(x => new LogModel
+					{ 
+						CreateDate = x.CreateDate,
+						EducationMaterial = x.EducationMaterial.Title,
+						Type = x.Type.GetStringValue(),
+						User = x.User.Title
+					})
+					.OrderByDescending(x => x.CreateDate)
+					.ToListAsync();
 			}
 		}
 
-		public async Task CreateLog(LogModel data, int userId)
+		public async Task CreateLog(LogItemModel data, int userId)
 		{
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 

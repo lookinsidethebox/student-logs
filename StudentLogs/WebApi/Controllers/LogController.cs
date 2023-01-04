@@ -1,11 +1,12 @@
 ﻿using Core.Models;
 using Core.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
 {
 	[ApiController]
-	[Route("log")]
+	[Route("logs")]
 	public class LogController : ControllerBase
 	{
 		private readonly ILogger<LogController> _logger;
@@ -22,12 +23,28 @@ namespace WebApi.Controllers
 		}
 
 		[HttpGet]
-		public async Task<IActionResult> GetAsync(int? materialId = null, int? userId = null)
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> GetAsync()
 		{
 			try
 			{
-				var logs = await _logService.GetLogsAsync(materialId, userId);
-				return Ok(logs);
+				return Ok(await _logService.GetLogsAsync());
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest();
+			}
+		}
+
+		[HttpGet]
+		[Authorize(Roles = "Admin")]
+		[Route("byUserId")]
+		public async Task<IActionResult> GetByUserAsync(int id)
+		{
+			try
+			{
+				return Ok(await _logService.GetLogsAsync(userId: id));
 			}
 			catch (Exception ex)
 			{
@@ -37,7 +54,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromForm] LogModel data)
+		public async Task<IActionResult> PostAsync([FromForm] LogItemModel data)
 		{
 			try
 			{

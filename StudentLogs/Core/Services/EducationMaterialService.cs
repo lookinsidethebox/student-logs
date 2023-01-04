@@ -148,7 +148,7 @@ namespace Core.Services
 				var repo = new BaseRepository<EducationMaterial>(db);
 				var material = await repo.GetByIdAsync(id);
 
-				await _logService.CreateLog(new LogModel
+				await _logService.CreateLog(new LogItemModel
 				{
 					MaterialId = id,
 					Type = (int)LogType.Clicked

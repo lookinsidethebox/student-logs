@@ -2,8 +2,9 @@
 {
 	public class LogModel
 	{
-		public int MaterialId { get; set; }
-		public int Type { get; set; }
-		public string? Info { get; set; }
+		public string User { get; set; } = null!;
+		public DateTime CreateDate { get; set; }
+		public string Type { get; set; } = null!;
+		public string EducationMaterial { get; set; } = null!;
 	}
 }
