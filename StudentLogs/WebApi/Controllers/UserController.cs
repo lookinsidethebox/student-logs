@@ -79,8 +79,11 @@ namespace WebApi.Controllers
 		{
 			try
 			{
-				if (string.IsNullOrEmpty(data.Email))
+				if (string.IsNullOrWhiteSpace(data.Email))
 					throw new Exception("Не задано поле Email");
+
+				if (!StringHelper.IsValidEmail(data.Email))
+					throw new Exception("Некорректное значение поля Email");
 
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -146,8 +149,11 @@ namespace WebApi.Controllers
 		{
 			try
 			{
-				if (string.IsNullOrEmpty(data.Email))
+				if (string.IsNullOrWhiteSpace(data.Email))
 					throw new Exception("Не задано поле Email");
+
+				if (!StringHelper.IsValidEmail(data.Email))
+					throw new Exception("Некорректное значение поля Email");
 
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
