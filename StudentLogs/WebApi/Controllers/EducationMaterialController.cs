@@ -51,13 +51,24 @@ namespace WebApi.Controllers
 			try
 			{
 				if (string.IsNullOrEmpty(data.Title) || data.Type == (int)EducationMaterialType.NotSet)
-					throw new Exception("Не заданы обязательные поля Title и Type");
+					throw new Exception("Не заданы обязательные поля Заголовок и Тип материала");
+
+				if (string.IsNullOrEmpty(data.Text) && data.Type == (int)EducationMaterialType.Text)
+					throw new Exception("Для материала с типом Текст необходимо заполнить поле Текст");
+
+				if (!data.SurveyId.HasValue && data.Type == (int)EducationMaterialType.Survey)
+					throw new Exception("Для материала с типом Опрос необходимо заполнить поле с выбором опроса");
+
+				//if (data.Type == (int)EducationMaterialType.Video)
+				//	throw new Exception("Для материала с типом Видео необходимо прикрепить файл с видео");
+
+				//if (data.Type == (int)EducationMaterialType.Document)
+				//	throw new Exception("Для материала с типом Документ необходимо прикрепить файл с документом");
 
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 				using (var db = new DataContext(options))
 				{
-
 					var material = new EducationMaterial
 					{
 						Title = data.Title,

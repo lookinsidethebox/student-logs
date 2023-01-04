@@ -1,5 +1,7 @@
+using Core;
 using Core.Abstractions;
 using Core.EF;
+using Core.Extensions;
 using Core.Helpers;
 using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -37,6 +39,12 @@ builder.Services.AddSingleton(typeof(IRepository<>), typeof(BaseRepository<>));
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddSingleton<IDataContextOptionsHelper, DataContextOptionsHelper>();
+builder.Services.AddSingleton<ILogService, LogService>();
+
+builder.Services.AddSeed<SeedData>();
+
+var serviceProvider = builder.Services.BuildServiceProvider();
+await serviceProvider.RunSeedAsync();
 
 var app = builder.Build();
 
@@ -49,7 +57,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.MapControllers().RequireAuthorization();
 

@@ -5,6 +5,7 @@ using Core.Helpers;
 using Core.Models;
 using Core.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApi.Controllers
 {
@@ -49,36 +50,98 @@ namespace WebApi.Controllers
 				{
 					var repo = new BaseRepository<EducationMaterial>(db);
 					var materials = await repo.GetAsync();
+					var query = materials.OrderBy(x => !x.IsFirst).ThenBy(x => x.IsFinal);
+					var result = new List<EducationMaterialListItemModel>();
+
+					var logIds = await db.Set<Log>().AsNoTracking()
+						.Where(x => x.EducationMaterial.Type != EducationMaterialType.Survey
+							|| x.Type == LogType.SurveyCompleted && x.EducationMaterial.Type == EducationMaterialType.Survey)
+						.Select(x => x.EducationMaterialId)
+						.Distinct()
+						.ToListAsync();
 
 					if (user.SortType == SortType.ByTeacherChoice)
 					{
-						return Ok(materials.OrderBy(x => x.IsFirst)
-							.ThenBy(x => !x.IsFinal)
-							.ThenBy(x => x.Order)
-							.Select(x => new EducationMaterialListItemModel
+						var list = query.ThenBy(x => x.Order)
+							.Select(x => new EducationMaterial
 							{ 
 								Id = x.Id,
 								Description = x.Description,
-								IsActive = true,
 								Title = x.Title,
-								Type = (int)x.Type
-							}));
+								Type = x.Type
+							});
+
+						var prevIsActive = true;
+
+						foreach (var item in list)
+						{
+							var logExists = logIds.Where(x => x == item.Id).FirstOrDefault() != 0;
+
+							var model = new EducationMaterialListItemModel
+							{
+								Id = item.Id,
+								Description = item.Description,
+								IsActive = prevIsActive && logExists,
+								Title = item.Title,
+								Type = (int)item.Type
+							};
+
+							result.Add(model);
+							prevIsActive = model.IsActive;
+						}
+
+						return Ok(result);
 					}
 					else
 					{
 						var random = new Random();
 
-						return Ok(materials.OrderBy(x => x.IsFirst)
-							.ThenBy(x => !x.IsFinal)
-							.ThenBy(x => random.Next())
-							.Select(x => new EducationMaterialListItemModel
+						var list = query.ThenBy(x => random.Next())
+							.Select(x => new EducationMaterial
 							{
 								Id = x.Id,
 								Description = x.Description,
-								IsActive = true,
 								Title = x.Title,
-								Type = (int)x.Type
-							}));
+								Type = x.Type,
+								IsFinal = x.IsFinal,
+								IsFirst = x.IsFirst
+							});
+
+						var firstMaterialIds = list
+							.Where(x => x.IsFirst)
+							.Select(x => x.Id);
+
+						var notFinalMaterialIds = list
+							.Where(x => !x.IsFinal)
+							.Select(x => x.Id);
+
+						var allFirstMaterialsPassed = firstMaterialIds.All(x => logIds.Contains(x));
+						var allNotFinalMaterialsPassed = notFinalMaterialIds.All(x => logIds.Contains(x));
+						var isFirst = true;
+
+						foreach (var item in list)
+						{
+							var isActive = isFirst
+								|| item.IsFirst 
+								|| allFirstMaterialsPassed && !item.IsFinal 
+								|| allNotFinalMaterialsPassed && item.IsFinal;
+
+							if (isFirst)
+								isFirst = false;
+
+							var model = new EducationMaterialListItemModel
+							{
+								Id = item.Id,
+								Description = item.Description,
+								IsActive = isActive,
+								Title = item.Title,
+								Type = (int)item.Type
+							};
+
+							result.Add(model);
+						}
+
+						return Ok(result);
 					}
 				}
 			}

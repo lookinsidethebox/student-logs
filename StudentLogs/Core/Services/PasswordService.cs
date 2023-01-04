@@ -7,6 +7,7 @@ namespace Core.Services
 {
 	public interface IPasswordService
 	{
+		string GenerateHash();
 		string GenerateHash(string password);
 		bool PasswordIsValid(string password, string hash);
 	}
@@ -20,10 +21,24 @@ namespace Core.Services
 			_passwordOptions = passwordOptions;
 		}
 
+		public string GenerateHash()
+		{
+			if (_passwordOptions == null
+				|| string.IsNullOrEmpty(_passwordOptions.Value.DefaultAdminPassword))
+				throw new Exception();
+
+			return GenerateHashByPassword(_passwordOptions.Value.DefaultAdminPassword);
+		}
+
 		public string GenerateHash(string password)
 		{
-			if (_passwordOptions == null 
-				|| _passwordOptions.Value == null 
+			return GenerateHashByPassword(password);
+		}
+
+		private string GenerateHashByPassword(string password)
+		{
+			if (_passwordOptions == null
+				|| _passwordOptions.Value == null
 				|| string.IsNullOrEmpty(_passwordOptions.Value.Salt))
 				throw new Exception();
 
