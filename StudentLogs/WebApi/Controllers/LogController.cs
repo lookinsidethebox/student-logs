@@ -1,8 +1,4 @@
-﻿using Core.EF;
-using Core.Entities;
-using Core.Enums;
-using Core.Helpers;
-using Core.Models;
+﻿using Core.Models;
 using Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,16 +8,14 @@ namespace WebApi.Controllers
 	[Route("log")]
 	public class LogController : ControllerBase
 	{
-		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
 		private readonly ILogger<LogController> _logger;
 		private readonly IAuthService _authService;
 		private readonly ILogService _logService;
 
-		public LogController(IDataContextOptionsHelper dataContextOptionsHelper,
-			ILogger<LogController> logger,
-			IAuthService authService, ILogService logService)
+		public LogController(ILogger<LogController> logger,
+			IAuthService authService,
+			ILogService logService)
 		{
-			_dataContextOptionsHelper = dataContextOptionsHelper;
 			_logger = logger;
 			_authService = authService;
 			_logService = logService;
@@ -60,23 +54,8 @@ namespace WebApi.Controllers
 				if (user == null)
 					throw new Exception($"Пользователь с Email = {email} не найден");
 
-				var options = _dataContextOptionsHelper.GetDataContextOptions();
-
-				using (var db = new DataContext(options))
-				{
-					var log = new Log
-					{
-						CreateDate = DateTime.Now,
-						EducationMaterialId = data.MaterialId,
-						Type = (LogType)data.Type,
-						Info = data.Info,
-						UserId = user.Id
-					};
-
-					var repo = new BaseRepository<Log>(db);
-					await repo.CreateAsync(log);
-					return Ok();
-				}
+				await _logService.CreateLog(data, user.Id);
+				return Ok();
 			}
 			catch (Exception ex)
 			{

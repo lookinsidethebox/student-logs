@@ -40,6 +40,7 @@ builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddSingleton<IDataContextOptionsHelper, DataContextOptionsHelper>();
 builder.Services.AddSingleton<ILogService, LogService>();
+builder.Services.AddSingleton<IEducationMaterialService, EducationMaterialService>();
 
 builder.Services.AddSeed<SeedData>();
 
