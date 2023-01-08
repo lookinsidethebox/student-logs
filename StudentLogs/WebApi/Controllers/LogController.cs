@@ -54,7 +54,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromForm] LogItemModel data)
+		public async Task<IActionResult> PostAsync([FromBody] LogItemModel data)
 		{
 			try
 			{

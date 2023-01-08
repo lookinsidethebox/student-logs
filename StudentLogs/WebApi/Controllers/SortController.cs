@@ -49,7 +49,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromForm] int type)
+		public async Task<IActionResult> PostAsync([FromBody] int type)
 		{
 			try
 			{

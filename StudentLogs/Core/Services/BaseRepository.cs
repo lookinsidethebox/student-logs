@@ -31,10 +31,11 @@ namespace Core.Services
 			return await _dbSet.FindAsync(id);
 		}
 
-		public virtual async Task CreateAsync(T item)
+		public virtual async Task<int> CreateAsync(T item)
 		{
-			await _dbSet.AddAsync(item);
+			var entity = await _dbSet.AddAsync(item);
 			await _context.SaveChangesAsync();
+			return entity.Entity.Id;
 		}
 
 		public virtual async Task UpdateAsync(T item)

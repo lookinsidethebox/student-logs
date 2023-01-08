@@ -46,7 +46,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromForm] EducationMaterialModel data)
+		public async Task<IActionResult> PostAsync([FromBody] EducationMaterialModel data)
 		{
 			try
 			{
@@ -114,7 +114,7 @@ namespace WebApi.Controllers
 		//}
 
 		[HttpPut]
-		public async Task<IActionResult> PutAsync([FromForm] EducationMaterialModel data)
+		public async Task<IActionResult> PutAsync([FromBody] EducationMaterialModel data)
 		{
 			try
 			{
