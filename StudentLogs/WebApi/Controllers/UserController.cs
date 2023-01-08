@@ -75,7 +75,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromForm] UserModel data)
+		public async Task<IActionResult> PostAsync([FromBody] UserModel data)
 		{
 			try
 			{
@@ -118,7 +118,7 @@ namespace WebApi.Controllers
 
 		[HttpPost]
 		[Route("password")]
-		public async Task<IActionResult> ChangePasswordAsync([FromForm] PasswordModel data)
+		public async Task<IActionResult> ChangePasswordAsync([FromBody] PasswordModel data)
 		{
 			try
 			{
@@ -145,7 +145,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPut]
-		public async Task<IActionResult> PutAsync([FromForm] UserModel data)
+		public async Task<IActionResult> PutAsync([FromBody] UserModel data)
 		{
 			try
 			{
