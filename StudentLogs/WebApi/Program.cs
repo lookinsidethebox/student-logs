@@ -45,9 +45,16 @@ builder.Services.AddSingleton<IEducationMaterialService, EducationMaterialServic
 builder.Services.AddSeed<SeedData>();
 
 var serviceProvider = builder.Services.BuildServiceProvider();
-await serviceProvider.RunSeedAsync();
+//await serviceProvider.RunSeedAsync();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<DataContext>();
+    context.Database.Migrate();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
