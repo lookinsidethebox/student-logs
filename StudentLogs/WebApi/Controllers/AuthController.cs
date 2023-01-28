@@ -25,7 +25,7 @@ namespace WebApi.Controllers
 		{
 			try
 			{
-				var token = _authService.Login(email, password, out string role);
+				var token = _authService.Login(email, password, out string role, out string sort);
 
 				if (string.IsNullOrEmpty(token))
 					throw new Exception();
@@ -34,10 +34,11 @@ namespace WebApi.Controllers
 				{
 					access_token = token,
 					username = email,
-					role = role
+					role = role,
+					sort = sort
 				};
 
-				return new JsonResult(json);
+				return Ok(json);
 			}
 			catch(Exception ex)
 			{

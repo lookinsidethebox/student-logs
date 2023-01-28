@@ -10,7 +10,7 @@ namespace Core.Services
 {
 	public interface IAuthService
 	{
-		string Login(string email, string password, out string role);
+		string Login(string email, string password, out string role, out string sort);
 		User GetCurrentUser(string email);
 	}
 
@@ -26,7 +26,7 @@ namespace Core.Services
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 		}
 
-		public string Login(string email, string password, out string role)
+		public string Login(string email, string password, out string role, out string sort)
 		{
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -44,6 +44,7 @@ namespace Core.Services
 					throw new Exception();
 
 				role = user.Role.ToString();
+				sort = user.SortType.ToString();
 
 				return GenerateToken(email, role);
 			}

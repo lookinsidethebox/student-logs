@@ -45,7 +45,7 @@ builder.Services.AddSingleton<IEducationMaterialService, EducationMaterialServic
 builder.Services.AddSeed<SeedData>();
 
 var serviceProvider = builder.Services.BuildServiceProvider();
-//await serviceProvider.RunSeedAsync();
+await serviceProvider.RunSeedAsync();
 
 var app = builder.Build();
 
