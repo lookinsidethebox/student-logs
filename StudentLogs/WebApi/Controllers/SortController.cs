@@ -2,6 +2,7 @@
 using Core.Entities;
 using Core.Enums;
 using Core.Helpers;
+using Core.Models;
 using Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +50,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromBody] int type)
+		public async Task<IActionResult> PostAsync([FromBody] SortRequestModel model)
 		{
 			try
 			{
@@ -68,7 +69,7 @@ namespace WebApi.Controllers
 				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<User>(db);
-					user.SortType = (SortType)type;
+					user.SortType = (SortType)model.SortType;
 					await repo.UpdateAsync(user);
 					return Ok();
 				}
