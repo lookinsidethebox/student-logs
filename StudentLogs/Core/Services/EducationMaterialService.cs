@@ -46,7 +46,7 @@ namespace Core.Services
 
 				if (sortType == SortType.ByTeacherChoice)
 				{
-					var list = query.ThenBy(x => x.Order)
+					var list = query.ThenByDescending(x => x.Order)
 						.Select(x => new EducationMaterial
 						{
 							Id = x.Id,

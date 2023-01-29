@@ -35,7 +35,7 @@ namespace WebApi.Controllers
 				{
 					var repo = new BaseRepository<EducationMaterial>(db);
 					var materials = await repo.GetAsync();
-					return Ok(materials.OrderBy(x => x.Order));
+					return Ok(materials.OrderByDescending(x => x.Order));
 				}
 			}
 			catch(Exception ex)
@@ -93,25 +93,39 @@ namespace WebApi.Controllers
 			}
 		}
 
-		//[HttpPost]
-		//[Route("order")]
-		//public async Task<IActionResult> ChangeOrderAsync()
-		//{
-		//	try
-		//	{
-		//		var options = _dataContextOptionsHelper.GetDataContextOptions();
+		[HttpPost]
+		[Route("order")]
+		public async Task<IActionResult> ChangeOrderAsync(EducationMaterialOrderModel model)
+		{
+			try
+			{
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
-		//		using (var db = new DataContext(options))
-		//		{
-		//			var repo = new BaseRepository<EducationMaterial>(db);
-		//			return Ok();
-		//		}
-		//	}
-		//	catch
-		//	{
-		//		return BadRequest();
-		//	}
-		//}
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+
+					var materials = repo.GetByPredicate(x => x.Id == model.CurrentMaterialId
+						|| x.Id == model.PreviousMaterialId
+						|| x.Id == model.NextMaterialId);
+
+					var current = materials.Where(x => x.Id == model.CurrentMaterialId).FirstOrDefault();
+					var prev = materials.Where(x => x.Id == model.PreviousMaterialId).FirstOrDefault();
+					var next = materials.Where(x => x.Id == model.NextMaterialId).FirstOrDefault();
+
+					if (current == null || prev == null || next == null)
+						throw new Exception("Карточка не найдена");
+
+					current.Order = (prev.Order - next.Order) / 2 + next.Order;
+					await repo.UpdateAsync(current);
+					return await GetAsync();
+				}
+			}
+			catch
+			{
+				return BadRequest();
+			}
+		}
 
 		[HttpPut]
 		public async Task<IActionResult> PutAsync([FromBody] EducationMaterialModel data)
