@@ -44,14 +44,12 @@ namespace Core.Services
 				if (!passwordIsValid)
 					throw new Exception();
 
-				var role = user.Role.ToString();
-
 				return new AuthModel
 				{ 
 					Id = user.Id,
-					Role = role,
-					Sort = user.SortType.ToString(),
-					Token = GenerateToken(email, role)
+					Role = (int)user.Role,
+					Sort = (int)user.SortType,
+					Token = GenerateToken(email, user.Role.ToString())
 				};
 			}
 		}
