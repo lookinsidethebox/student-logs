@@ -1,6 +1,7 @@
 ﻿using Core.EF;
 using Core.Entities;
 using Core.Helpers;
+using Core.Models;
 using Core.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -10,7 +11,7 @@ namespace Core.Services
 {
 	public interface IAuthService
 	{
-		string Login(string email, string password, out string role, out string sort);
+		AuthModel Login(string email, string password);
 		User GetCurrentUser(string email);
 	}
 
@@ -26,7 +27,7 @@ namespace Core.Services
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 		}
 
-		public string Login(string email, string password, out string role, out string sort)
+		public AuthModel Login(string email, string password)
 		{
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -43,10 +44,15 @@ namespace Core.Services
 				if (!passwordIsValid)
 					throw new Exception();
 
-				role = user.Role.ToString();
-				sort = user.SortType.ToString();
+				var role = user.Role.ToString();
 
-				return GenerateToken(email, role);
+				return new AuthModel
+				{ 
+					Id = user.Id,
+					Role = role,
+					Sort = user.SortType.ToString(),
+					Token = GenerateToken(email, role)
+				};
 			}
 		}
 
