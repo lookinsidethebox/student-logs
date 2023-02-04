@@ -182,7 +182,7 @@ namespace WebApi.Controllers
 								var answer = new Answer
 								{
 									QuestionId = question.Id,
-									Value = a
+									Value = a.Title
 								};
 
 								await answerRepo.CreateAsync(answer);
@@ -312,7 +312,7 @@ namespace WebApi.Controllers
 								var answer = new Answer
 								{
 									QuestionId = questionId,
-									Value = a
+									Value = a.Title
 								};
 
 								await answerRepo.CreateAsync(answer);

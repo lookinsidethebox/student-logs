@@ -10,6 +10,11 @@
 	public class SaveQuestionModel
 	{
 		public string Title { get; set; } = null!;
-		public List<string>? Answers { get; set; }
+		public List<SaveAnswerModel>? Answers { get; set; }
+	}
+
+	public class SaveAnswerModel
+	{
+		public string Title { get; set; } = null!;
 	}
 }
