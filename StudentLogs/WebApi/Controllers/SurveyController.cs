@@ -122,7 +122,7 @@ namespace WebApi.Controllers
 										Title = x.Value,
 										IsSelected = hasUserAnswer ? answer.Item1 == x.Id : false
 									}).OrderBy(x => random.Next())
-								: null
+								: new List<AnswerModel>()
 						};
 
 						questionModels.Add(model);
