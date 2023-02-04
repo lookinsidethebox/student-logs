@@ -105,8 +105,8 @@ namespace WebApi.Controllers
 						SortType = data.SortType.HasValue ? (SortType)data.SortType.Value : SortType.NotSet
 					};
 
-					await repo.CreateAsync(newUser);
-					return Ok();
+					newUser.Id = await repo.CreateAsync(newUser);
+					return Ok(newUser);
 				}
 			}
 			catch (Exception ex)
@@ -171,7 +171,7 @@ namespace WebApi.Controllers
 					user.Role = (UserRole)data.Role;
 					user.SortType = data.SortType.HasValue ? (SortType)data.SortType.Value : SortType.NotSet;
 					await repo.UpdateAsync(user);
-					return Ok();
+					return Ok(user);
 				}
 			}
 			catch (Exception ex)

@@ -158,7 +158,7 @@ namespace WebApi.Controllers
 				{
 					var surveyRepo = new BaseRepository<Survey>(db);
 					var survey = new Survey { Title = data.Title };
-					var surveyId = await surveyRepo.CreateAsync(survey);
+					survey.Id = await surveyRepo.CreateAsync(survey);
 					var questionRepo = new BaseRepository<Question>(db);
 					var answerRepo = new BaseRepository<Answer>(db);
 
@@ -168,12 +168,12 @@ namespace WebApi.Controllers
 
 						var question = new Question
 						{
-							SurveyId = surveyId,
+							SurveyId = survey.Id,
 							Value = q.Title,
 							HasAnswers = hasAnswers
 						};
 
-						var questionId = await questionRepo.CreateAsync(question);
+						question.Id = await questionRepo.CreateAsync(question);
 
 						if (hasAnswers)
 						{
@@ -181,7 +181,7 @@ namespace WebApi.Controllers
 							{
 								var answer = new Answer
 								{
-									QuestionId = questionId,
+									QuestionId = question.Id,
 									Value = a
 								};
 
@@ -190,7 +190,7 @@ namespace WebApi.Controllers
 						}
 					}
 
-					return Ok();
+					return Ok(survey);
 				}
 			}
 			catch (Exception ex)
@@ -320,7 +320,7 @@ namespace WebApi.Controllers
 						}
 					}
 
-					return Ok();
+					return Ok(survey);
 				}
 			}
 			catch (Exception ex)

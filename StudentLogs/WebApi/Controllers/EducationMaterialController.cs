@@ -82,8 +82,8 @@ namespace WebApi.Controllers
 					};
 
 					var repo = new BaseRepository<EducationMaterial>(db);
-					await repo.CreateAsync(material);
-					return Ok();
+					material.Id = await repo.CreateAsync(material);
+					return Ok(material);
 				}
 			}
 			catch(Exception ex)
@@ -153,7 +153,7 @@ namespace WebApi.Controllers
 					material.Text = data.Text;
 					//material.FilePath = "";
 					await repo.UpdateAsync(material);
-					return Ok();
+					return Ok(material);
 				}
 			}
 			catch(Exception ex)
