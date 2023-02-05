@@ -82,8 +82,12 @@ namespace WebApi.Controllers
 					};
 
 					var repo = new BaseRepository<EducationMaterial>(db);
-					material.Id = await repo.CreateAsync(material);
-					return Ok(material);
+					var materialId = await repo.CreateAsync(material);
+					return Ok(new
+					{
+						Id = materialId,
+						Title = material.Title
+					});
 				}
 			}
 			catch(Exception ex)
