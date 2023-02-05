@@ -26,6 +26,8 @@ namespace Core.Entities
 
 		public string? FilePath { get; set; }
 
+		public string? FileContentType { get; set; }
+
 		public Survey? Survey { get; set; }
 		public int? SurveyId { get; set; }
 	}

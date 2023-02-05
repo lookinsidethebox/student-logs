@@ -16,13 +16,21 @@ namespace WebApi.Controllers
 	{
 		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
 		private readonly ILogger<EducationMaterialController> _logger;
+		private readonly ILogService _logService;
+		private readonly IAuthService _authService;
 
 		public EducationMaterialController(IDataContextOptionsHelper dataContextOptionsHelper,
-			ILogger<EducationMaterialController> logger)
+			ILogger<EducationMaterialController> logger,
+			ILogService logService,
+			IAuthService authService)
 		{
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 			_logger = logger;
+			_logService = logService;
+			_authService = authService;
 		}
+
+		public const string FILES_PATH = "/files";
 
 		[HttpGet]
 		public async Task<IActionResult> GetAsync()
@@ -68,7 +76,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromBody] EducationMaterialModel data)
+		public async Task<IActionResult> PostAsync([FromForm] EducationMaterialModel data)
 		{
 			try
 			{
@@ -81,11 +89,11 @@ namespace WebApi.Controllers
 				if (!data.SurveyId.HasValue && data.Type == (int)EducationMaterialType.Survey)
 					throw new Exception("Для материала с типом Опрос необходимо заполнить поле с выбором опроса");
 
-				//if (data.Type == (int)EducationMaterialType.Video)
-				//	throw new Exception("Для материала с типом Видео необходимо прикрепить файл с видео");
+				if (data.Type == (int)EducationMaterialType.Video && Request.Form.Files.Count == 0)
+					throw new Exception("Для материала с типом Видео необходимо прикрепить файл с видео");
 
-				//if (data.Type == (int)EducationMaterialType.Document)
-				//	throw new Exception("Для материала с типом Документ необходимо прикрепить файл с документом");
+				if (data.Type == (int)EducationMaterialType.Document && Request.Form.Files.Count == 0)
+					throw new Exception("Для материала с типом Документ необходимо прикрепить файл с документом");
 
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -99,12 +107,25 @@ namespace WebApi.Controllers
 						IsFirst = data.IsFirst,
 						IsFinal = data.IsFinal,
 						SurveyId = data.SurveyId,
-						Text = data.Text,
-						//FilePath = ""
+						Text = data.Text
 					};
 
 					var repo = new BaseRepository<EducationMaterial>(db);
 					var materialId = await repo.CreateAsync(material);
+
+					if (Request.Form.Files.Count > 0)
+					{
+						var file = Request.Form.Files.First();
+						var fileModel = await UploadFile(file, materialId);
+
+						if (fileModel != null)
+						{
+							material.FilePath = fileModel.Path;
+							material.FileContentType = fileModel.ContentType;
+							await repo.UpdateAsync(material);
+						}
+					}
+
 					return Ok(new
 					{
 						Id = materialId,
@@ -154,13 +175,25 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPut]
-		public async Task<IActionResult> PutAsync([FromBody] EducationMaterialModel data)
+		public async Task<IActionResult> PutAsync([FromForm] EducationMaterialModel data)
 		{
 			try
 			{
-				if (string.IsNullOrEmpty(data.Title))
-					throw new Exception("Не задано обязательное поле Title");
+				if (string.IsNullOrEmpty(data.Title) || data.Type == (int)EducationMaterialType.NotSet)
+					throw new Exception("Не заданы обязательные поля Заголовок и Тип материала");
 
+				if (string.IsNullOrEmpty(data.Text) && data.Type == (int)EducationMaterialType.Text)
+					throw new Exception("Для материала с типом Текст необходимо заполнить поле Текст");
+
+				if (!data.SurveyId.HasValue && data.Type == (int)EducationMaterialType.Survey)
+					throw new Exception("Для материала с типом Опрос необходимо заполнить поле с выбором опроса");
+
+				if (data.Type == (int)EducationMaterialType.Video && Request.Form.Files.Count == 0)
+					throw new Exception("Для материала с типом Видео необходимо прикрепить файл с видео");
+
+				if (data.Type == (int)EducationMaterialType.Document && Request.Form.Files.Count == 0)
+					throw new Exception("Для материала с типом Документ необходимо прикрепить файл с документом");
+				
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 				using (var db = new DataContext(options))
@@ -177,7 +210,19 @@ namespace WebApi.Controllers
 					material.IsFinal = data.IsFinal;
 					material.SurveyId = data.SurveyId;
 					material.Text = data.Text;
-					//material.FilePath = "";
+
+					if (Request.Form.Files.Count > 0)
+					{
+						var file = Request.Form.Files.First();
+						var fileModel = await UploadFile(file, data.Id);
+
+						if (fileModel != null)
+						{
+							material.FilePath = fileModel.Path;
+							material.FileContentType = fileModel.ContentType;
+						}
+					}
+
 					await repo.UpdateAsync(material);
 					return Ok(material);
 				}
@@ -208,6 +253,86 @@ namespace WebApi.Controllers
 				_logger.LogError(ex, ex.Message);
 				return BadRequest();
 			}
+		}
+
+		[HttpGet]
+		[Route("file")]
+		public async Task<IActionResult> GetFile(int id)
+		{
+			try
+			{
+				var email = HttpContext.User.Identity?.Name;
+
+				if (string.IsNullOrEmpty(email))
+					throw new UnauthorizedAccessException();
+
+				var user = _authService.GetCurrentUser(email);
+
+				if (user == null)
+					throw new UnauthorizedAccessException();
+
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					var material = await repo.GetByIdAsync(id);
+
+					if (material == null)
+						throw new Exception($"Учебный материал с id = {id} не найден");
+
+					if (string.IsNullOrEmpty(material.FilePath) || string.IsNullOrEmpty(material.FileContentType))
+						throw new Exception($"Файл не найден");
+
+					await _logService.CreateLog(new LogItemModel
+					{
+						MaterialId = id,
+						Type = (int)LogType.Downloaded
+					}, user.Id);
+
+					var file = System.IO.File.ReadAllBytes(material.FilePath);
+					return new FileContentResult(file, material.FileContentType);
+				}
+			}
+			catch (UnauthorizedAccessException uae)
+			{
+				_logger.LogError(uae, uae.Message);
+				return Unauthorized();
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest(ex.Message);
+			}
+		}
+
+		private async Task<FileModel> UploadFile(IFormFile file, int materialId)
+		{
+			if (!Directory.Exists(FILES_PATH))
+				Directory.CreateDirectory(FILES_PATH);
+
+			var path = $"{FILES_PATH}/{materialId}";
+
+			if (!Directory.Exists(path))
+				Directory.CreateDirectory(path);
+
+			var filePath = Path.Combine(path, file.FileName);
+
+			if (file != null && file.Length > 0)
+			{
+				using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await file.CopyToAsync(stream);
+
+					return new FileModel
+					{ 
+						ContentType = file.ContentType,
+						Path = filePath
+					};
+				}
+			}
+
+			return null;
 		}
 	}
 }
