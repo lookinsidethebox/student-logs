@@ -45,6 +45,28 @@ namespace WebApi.Controllers
 			}
 		}
 
+		[HttpGet]
+		[Route("byId")]
+		public async Task<IActionResult> GetByIdAsync(int id)
+		{
+			try
+			{
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					var material = await repo.GetByIdAsync(id);
+					return Ok(material);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest();
+			}
+		}
+
 		[HttpPost]
 		public async Task<IActionResult> PostAsync([FromBody] EducationMaterialModel data)
 		{
