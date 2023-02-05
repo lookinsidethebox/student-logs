@@ -190,12 +190,6 @@ namespace WebApi.Controllers
 
 				if (!data.SurveyId.HasValue && data.Type == (int)EducationMaterialType.Survey)
 					throw new Exception("Для материала с типом Опрос необходимо заполнить поле с выбором опроса");
-
-				if (data.Type == (int)EducationMaterialType.Video && Request.Form.Files.Count == 0)
-					throw new Exception("Для материала с типом Видео необходимо прикрепить файл с видео");
-
-				if (data.Type == (int)EducationMaterialType.Document && Request.Form.Files.Count == 0)
-					throw new Exception("Для материала с типом Документ необходимо прикрепить файл с документом");
 				
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
