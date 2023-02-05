@@ -18,16 +18,19 @@ namespace WebApi.Controllers
 		private readonly ILogger<EducationMaterialController> _logger;
 		private readonly ILogService _logService;
 		private readonly IAuthService _authService;
+		private readonly IWebHostEnvironment _webHostEnvironment;
 
 		public EducationMaterialController(IDataContextOptionsHelper dataContextOptionsHelper,
 			ILogger<EducationMaterialController> logger,
 			ILogService logService,
-			IAuthService authService)
+			IAuthService authService,
+			IWebHostEnvironment webHostEnvironment)
 		{
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 			_logger = logger;
 			_logService = logService;
 			_authService = authService;
+			_webHostEnvironment = webHostEnvironment;
 		}
 
 		public const string FILES_PATH = "/files";
@@ -308,15 +311,17 @@ namespace WebApi.Controllers
 
 		private async Task<FileModel> UploadFile(IFormFile file, int materialId)
 		{
-			if (!Directory.Exists(FILES_PATH))
-				Directory.CreateDirectory(FILES_PATH);
+			var filesFolderPath = $"{_webHostEnvironment.ContentRootPath}/{FILES_PATH}";
 
-			var path = $"{FILES_PATH}/{materialId}";
+			if (!Directory.Exists(filesFolderPath))
+				Directory.CreateDirectory(filesFolderPath);
 
-			if (!Directory.Exists(path))
-				Directory.CreateDirectory(path);
+			var currentFileFolderPath = Path.Combine(filesFolderPath, materialId.ToString());
 
-			var filePath = Path.Combine(path, file.FileName);
+			if (!Directory.Exists(currentFileFolderPath))
+				Directory.CreateDirectory(currentFileFolderPath);
+
+			var filePath = Path.Combine(currentFileFolderPath, file.FileName);
 
 			if (file != null && file.Length > 0)
 			{
