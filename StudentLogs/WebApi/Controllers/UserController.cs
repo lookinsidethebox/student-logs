@@ -42,6 +42,7 @@ namespace WebApi.Controllers
 						.OrderBy(x => x.LastName)
 						.Select(x => new UserModel
 						{
+							Id = x.Id,
 							Email = x.Email,
 							FirstName = x.FirstName,
 							LastName = x.LastName,
@@ -77,6 +78,7 @@ namespace WebApi.Controllers
 
 					return Ok(new UserModel
 					{ 
+						Id = user.Id,
 						Email = user.Email,
 						FirstName = user.FirstName,
 						LastName = user.LastName,
