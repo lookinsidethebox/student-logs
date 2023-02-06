@@ -37,12 +37,12 @@ namespace Core.Services
 				var user = repo.GetByPredicate(x => x.Email == email).FirstOrDefault();
 
 				if (user == null)
-					throw new Exception();
+					throw new UnauthorizedAccessException();
 
 				var passwordIsValid = _passwordService.PasswordIsValid(password, user.PasswordHash);
 
 				if (!passwordIsValid)
-					throw new Exception();
+					throw new Exception("Неправильный пароль");
 
 				return new AuthModel
 				{ 
