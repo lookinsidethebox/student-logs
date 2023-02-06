@@ -42,7 +42,7 @@ namespace Core.Services
 				return await query
 					.Select(x => new LogModel
 					{ 
-						CreateDate = x.CreateDate,
+						CreateDate = x.CreateDate.ToString("dd.MM.yyyy HH:mm:ss"),
 						EducationMaterial = x.EducationMaterial.Title,
 						Type = x.Type.GetStringValue(),
 						User = x.User.Title
