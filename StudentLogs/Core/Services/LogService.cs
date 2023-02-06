@@ -40,15 +40,15 @@ namespace Core.Services
 					query = query.Where(x => x.UserId == userId.Value);
 
 				return await query
+					.OrderByDescending(x => x.CreateDate)
 					.Select(x => new LogModel
-					{ 
+					{
 						CreateDate = x.CreateDate.ToString("dd.MM.yyyy HH:mm:ss"),
 						EducationMaterial = x.EducationMaterial.Title,
 						Type = x.Type.GetStringValue(),
 						User = x.User.Title,
 						UserId = x.User.Id
 					})
-					.OrderByDescending(x => x.CreateDate)
 					.ToListAsync();
 			}
 		}
