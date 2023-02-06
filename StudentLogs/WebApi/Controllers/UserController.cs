@@ -38,7 +38,18 @@ namespace WebApi.Controllers
 				{
 					var repo = new BaseRepository<User>(db);
 					var users = await repo.GetAsync();
-					return Ok(users.OrderBy(x => x.LastName));
+					return Ok(users
+						.OrderBy(x => x.LastName)
+						.Select(x => new UserModel
+						{
+							Email = x.Email,
+							FirstName = x.FirstName,
+							LastName = x.LastName,
+							Role = (int)x.Role,
+							RoleText = x.Role.ToString(),
+							SortType = (int)x.SortType,
+							SortText = x.Role.ToString()
+						}));
 				}
 			}
 			catch (Exception ex)
@@ -64,7 +75,16 @@ namespace WebApi.Controllers
 					if (user == null)
 						throw new Exception($"Пользователь с id = {id} не найден");
 
-					return Ok(user);
+					return Ok(new UserModel
+					{ 
+						Email = user.Email,
+						FirstName = user.FirstName,
+						LastName = user.LastName,
+						Role = (int)user.Role,
+						RoleText = user.Role.ToString(),
+						SortType = (int)user.SortType,
+						SortText = user.Role.ToString()
+					});
 				}
 			}
 			catch (Exception ex)
@@ -75,7 +95,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> PostAsync([FromBody] UserModel data)
+		public async Task<IActionResult> PostAsync([FromBody] SaveUserModel data)
 		{
 			try
 			{
@@ -145,7 +165,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPut]
-		public async Task<IActionResult> PutAsync([FromBody] UserModel data)
+		public async Task<IActionResult> PutAsync([FromBody] SaveUserModel data)
 		{
 			try
 			{
