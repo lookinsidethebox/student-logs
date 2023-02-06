@@ -45,7 +45,8 @@ namespace Core.Services
 						CreateDate = x.CreateDate.ToString("dd.MM.yyyy HH:mm:ss"),
 						EducationMaterial = x.EducationMaterial.Title,
 						Type = x.Type.GetStringValue(),
-						User = x.User.Title
+						User = x.User.Title,
+						UserId = x.User.Id
 					})
 					.OrderByDescending(x => x.CreateDate)
 					.ToListAsync();
