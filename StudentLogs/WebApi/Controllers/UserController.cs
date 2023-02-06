@@ -131,7 +131,17 @@ namespace WebApi.Controllers
 					};
 
 					newUser.Id = await repo.CreateAsync(newUser);
-					return Ok(newUser);
+					return Ok(new UserModel
+					{
+						Id = newUser.Id,
+						Email = newUser.Email,
+						FirstName = newUser.FirstName,
+						LastName = newUser.LastName,
+						Role = (int)newUser.Role,
+						RoleText = newUser.Role.ToString(),
+						SortType = (int)newUser.SortType,
+						SortText = newUser.Role.ToString()
+					});
 				}
 			}
 			catch (Exception ex)
@@ -196,7 +206,17 @@ namespace WebApi.Controllers
 					user.Role = (UserRole)data.Role;
 					user.SortType = data.SortType.HasValue ? (SortType)data.SortType.Value : SortType.NotSet;
 					await repo.UpdateAsync(user);
-					return Ok(user);
+					return Ok(new UserModel
+					{
+						Id = user.Id,
+						Email = user.Email,
+						FirstName = user.FirstName,
+						LastName = user.LastName,
+						Role = (int)user.Role,
+						RoleText = user.Role.ToString(),
+						SortType = (int)user.SortType,
+						SortText = user.Role.ToString()
+					});
 				}
 			}
 			catch (Exception ex)
