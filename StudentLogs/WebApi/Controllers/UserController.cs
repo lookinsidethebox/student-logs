@@ -107,6 +107,9 @@ namespace WebApi.Controllers
 				if (!StringHelper.IsValidEmail(data.Email))
 					throw new Exception("Некорректное значение поля Email");
 
+				if (string.IsNullOrWhiteSpace(data.Password))
+					throw new Exception("Не задано поле Password");
+
 				var options = _dataContextOptionsHelper.GetDataContextOptions();
 
 				using (var db = new DataContext(options))
