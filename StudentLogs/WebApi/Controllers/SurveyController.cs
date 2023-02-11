@@ -131,7 +131,7 @@ namespace WebApi.Controllers
 					{
 						Id = survey.Id,
 						Title = survey.Title,
-						IsCompleted = isCompleted,
+						IsCompleted = true,
 						Questions = questionModels.OrderBy(x => random.Next())
 					};
 
