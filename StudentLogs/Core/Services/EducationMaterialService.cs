@@ -9,8 +9,8 @@ namespace Core.Services
 {
 	public interface IEducationMaterialService
 	{
-		Task<IEnumerable<EducationMaterialListItemModel>> GetEducationMaterialsForUserAsync(int userId, SortType sortType);
-		Task<EducationMaterialItemModel> GetEducationMaterialByIdAsync(int id, int userId, SortType sortType);
+		Task<IEnumerable<EducationMaterialListItemModel>> GetEducationMaterialsForUserAsync(int userId, SortType sortType, bool isAdmin);
+		Task<EducationMaterialItemModel> GetEducationMaterialByIdAsync(int id, int userId, SortType sortType, bool isAdmin);
 	}
 
 	public class EducationMaterialService : IEducationMaterialService
@@ -25,7 +25,7 @@ namespace Core.Services
 			_logService = logService;
 		}
 
-		public async Task<IEnumerable<EducationMaterialListItemModel>> GetEducationMaterialsForUserAsync(int userId, SortType sortType)
+		public async Task<IEnumerable<EducationMaterialListItemModel>> GetEducationMaterialsForUserAsync(int userId, SortType sortType, bool isAdmin)
 		{
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 
@@ -66,7 +66,7 @@ namespace Core.Services
 						{
 							Id = item.Id,
 							Description = item.Description,
-							IsActive = prevIsActive && logExists,
+							IsActive = prevIsActive && logExists || isAdmin,
 							Title = item.Title,
 							Type = (int)item.Type,
 							FilePath = item.FilePath
@@ -120,7 +120,7 @@ namespace Core.Services
 						{
 							Id = item.Id,
 							Description = item.Description,
-							IsActive = isActive,
+							IsActive = isActive || isAdmin,
 							Title = item.Title,
 							Type = (int)item.Type,
 							FilePath = item.FilePath
@@ -134,9 +134,9 @@ namespace Core.Services
 			}
 		}
 
-		public async Task<EducationMaterialItemModel> GetEducationMaterialByIdAsync(int id, int userId, SortType sortType)
+		public async Task<EducationMaterialItemModel> GetEducationMaterialByIdAsync(int id, int userId, SortType sortType, bool isAdmin)
 		{
-			var all = await GetEducationMaterialsForUserAsync(userId, sortType);
+			var all = await GetEducationMaterialsForUserAsync(userId, sortType, isAdmin);
 
 			if (!all.Where(x => x.Id == id && x.IsActive).Any())
 				throw new UnauthorizedAccessException();

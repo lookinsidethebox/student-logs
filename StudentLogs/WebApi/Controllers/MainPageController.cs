@@ -36,10 +36,10 @@ namespace WebApi.Controllers
 				if (user == null)
 					throw new UnauthorizedAccessException();
 
-				if (user.SortType == SortType.NotSet)
+				if (user.SortType == SortType.NotSet && user.Role != UserRole.Admin)
 					throw new UnauthorizedAccessException();
 
-				return Ok(await _educationMaterialService.GetEducationMaterialsForUserAsync(user.Id, user.SortType));
+				return Ok(await _educationMaterialService.GetEducationMaterialsForUserAsync(user.Id, user.SortType, user.Role == UserRole.Admin));
 			}
 			catch (UnauthorizedAccessException uae)
 			{
@@ -69,10 +69,10 @@ namespace WebApi.Controllers
 				if (user == null)
 					throw new UnauthorizedAccessException();
 
-				if (user.SortType == SortType.NotSet)
+				if (user.SortType == SortType.NotSet && user.Role != UserRole.Admin)
 					throw new UnauthorizedAccessException();
 
-				return Ok(await _educationMaterialService.GetEducationMaterialByIdAsync(id, user.Id, user.SortType));
+				return Ok(await _educationMaterialService.GetEducationMaterialByIdAsync(id, user.Id, user.SortType, user.Role == UserRole.Admin));
 			}
 			catch (UnauthorizedAccessException uae)
 			{
