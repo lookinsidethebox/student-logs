@@ -69,7 +69,9 @@ namespace Core.Services
 							IsActive = prevIsActive && logExists || isAdmin,
 							Title = item.Title,
 							Type = (int)item.Type,
-							FilePath = item.FilePath
+							FilePath = item.FilePath,
+							IsFinal = item.IsFinal,
+							IsFirst = item.IsFirst
 						};
 
 						result.Add(model);
@@ -123,7 +125,9 @@ namespace Core.Services
 							IsActive = isActive || isAdmin,
 							Title = item.Title,
 							Type = (int)item.Type,
-							FilePath = item.FilePath
+							FilePath = item.FilePath,
+							IsFinal = item.IsFinal,
+							IsFirst = item.IsFirst
 						};
 
 						result.Add(model);

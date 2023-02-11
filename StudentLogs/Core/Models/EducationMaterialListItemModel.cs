@@ -8,5 +8,7 @@
 		public int Type { get; set; }
 		public bool IsActive { get; set; }
 		public string? FilePath { get; set; }
+		public bool IsFirst { get; set; }
+		public bool IsFinal { get; set; }
 	}
 }
