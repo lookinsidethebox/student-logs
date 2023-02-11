@@ -114,13 +114,12 @@ namespace WebApi.Controllers
 						{
 							Id = q.Id,
 							Title = q.Value,
-							Value = hasUserAnswer ? answer.Item2 : null,
+							Value = hasUserAnswer ? answer.Item1.HasValue ? answer.Item1.ToString() : answer.Item2 : null,
 							Answers = q.HasAnswers && answers.TryGetValue(q.Id, out var ans) 
 								? ans.Select(x => new AnswerModel
 									{ 
 										Id = x.Id,
-										Title = x.Value,
-										IsSelected = hasUserAnswer ? answer.Item1 == x.Id : false
+										Title = x.Value
 									}).OrderBy(x => random.Next())
 								: new List<AnswerModel>()
 						};
