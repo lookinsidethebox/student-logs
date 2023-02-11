@@ -16,20 +16,14 @@ namespace WebApi.Controllers
 	{
 		private readonly IDataContextOptionsHelper _dataContextOptionsHelper;
 		private readonly ILogger<EducationMaterialController> _logger;
-		private readonly ILogService _logService;
-		private readonly IAuthService _authService;
 		private readonly IWebHostEnvironment _webHostEnvironment;
 
 		public EducationMaterialController(IDataContextOptionsHelper dataContextOptionsHelper,
 			ILogger<EducationMaterialController> logger,
-			ILogService logService,
-			IAuthService authService,
 			IWebHostEnvironment webHostEnvironment)
 		{
 			_dataContextOptionsHelper = dataContextOptionsHelper;
 			_logger = logger;
-			_logService = logService;
-			_authService = authService;
 			_webHostEnvironment = webHostEnvironment;
 		}
 
@@ -249,57 +243,6 @@ namespace WebApi.Controllers
 			{
 				_logger.LogError(ex, ex.Message);
 				return BadRequest();
-			}
-		}
-
-		[HttpGet]
-		[Route("file")]
-		public async Task<IActionResult> GetFile(int id)
-		{
-			try
-			{
-				var email = HttpContext.User.Identity?.Name;
-
-				if (string.IsNullOrEmpty(email))
-					throw new UnauthorizedAccessException();
-
-				var user = _authService.GetCurrentUser(email);
-
-				if (user == null)
-					throw new UnauthorizedAccessException();
-
-				var options = _dataContextOptionsHelper.GetDataContextOptions();
-
-				using (var db = new DataContext(options))
-				{
-					var repo = new BaseRepository<EducationMaterial>(db);
-					var material = await repo.GetByIdAsync(id);
-
-					if (material == null)
-						throw new Exception($"Учебный материал с id = {id} не найден");
-
-					if (string.IsNullOrEmpty(material.FilePath) || string.IsNullOrEmpty(material.FileContentType))
-						throw new Exception($"Файл не найден");
-
-					await _logService.CreateLog(new LogItemModel
-					{
-						MaterialId = id,
-						Type = (int)LogType.Downloaded
-					}, user.Id);
-
-					var file = System.IO.File.ReadAllBytes(material.FilePath);
-					return new FileContentResult(file, material.FileContentType);
-				}
-			}
-			catch (UnauthorizedAccessException uae)
-			{
-				_logger.LogError(uae, uae.Message);
-				return Unauthorized();
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, ex.Message);
-				return BadRequest(ex.Message);
 			}
 		}
 
