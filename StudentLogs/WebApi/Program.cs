@@ -6,6 +6,7 @@ using Core.Helpers;
 using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using IdentityOptions = Core.Options.IdentityOptions;
 using PasswordOptions = Core.Models.PasswordOptions;
@@ -64,6 +65,12 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider($"{builder.Environment.WebRootPath}/{FileHelper.FILES_PATH}"),
+    RequestPath = FileHelper.FILES_PATH
+});
 
 //app.UseHttpsRedirection();
 

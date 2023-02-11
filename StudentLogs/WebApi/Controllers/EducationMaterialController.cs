@@ -27,8 +27,6 @@ namespace WebApi.Controllers
 			_webHostEnvironment = webHostEnvironment;
 		}
 
-		public const string FILES_PATH = "/files";
-
 		[HttpGet]
 		public async Task<IActionResult> GetAsync()
 		{
@@ -248,7 +246,7 @@ namespace WebApi.Controllers
 
 		private async Task<FileModel> UploadFile(IFormFile file, int materialId)
 		{
-			var filesFolderPath = $"{_webHostEnvironment.ContentRootPath}/{FILES_PATH}";
+			var filesFolderPath = $"{_webHostEnvironment.WebRootPath}/{FileHelper.FILES_PATH}";
 
 			if (!Directory.Exists(filesFolderPath))
 				Directory.CreateDirectory(filesFolderPath);
