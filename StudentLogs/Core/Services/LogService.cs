@@ -47,7 +47,8 @@ namespace Core.Services
 						EducationMaterial = x.EducationMaterial.Title,
 						Type = x.Type.GetStringValue(),
 						User = x.User.Title,
-						UserId = x.User.Id
+						UserId = x.User.Id,
+						Info = x.Info
 					})
 					.ToListAsync();
 			}
@@ -64,9 +65,11 @@ namespace Core.Services
 					CreateDate = DateTime.Now,
 					EducationMaterialId = data.MaterialId,
 					Type = (LogType)data.Type,
-					Info = data.Info,
 					UserId = userId
 				};
+
+				if (log.Type == LogType.VideoSpeedChanged)
+					log.Info = $"Новая скорость воспроизведения равна {data.Info}";
 
 				var logRepo = new BaseRepository<Log>(db);
 				await logRepo.CreateAsync(log);
