@@ -71,12 +71,19 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
+		[DisableRequestSizeLimit]
 		public async Task<IActionResult> PostAsync([FromForm] EducationMaterialModel data)
 		{
 			try
 			{
 				if (string.IsNullOrEmpty(data.Title) || data.Type == (int)EducationMaterialType.NotSet)
 					throw new Exception("Не заданы обязательные поля Заголовок и Тип материала");
+
+				if (data.Title.Length > 100)
+					throw new Exception($"Заголовок не может быть длинее 100 символов. Сейчас {data.Title.Length} символов");
+
+				if (!string.IsNullOrEmpty(data.Description) && data.Description.Length > 320)
+					throw new Exception($"Описание не может быть длинее 320 символов. Сейчас {data.Description.Length} символов");
 
 				if (string.IsNullOrEmpty(data.Text) && data.Type == (int)EducationMaterialType.Text)
 					throw new Exception("Для материала с типом Текст необходимо заполнить поле Текст");
@@ -94,6 +101,9 @@ namespace WebApi.Controllers
 
 				using (var db = new DataContext(options))
 				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					var materialCount = (await repo.GetAsync()).Count() + 1;
+
 					var material = new EducationMaterial
 					{
 						Title = data.Title,
@@ -102,10 +112,12 @@ namespace WebApi.Controllers
 						IsFirst = data.IsFirst,
 						IsFinal = data.IsFinal,
 						SurveyId = data.SurveyId,
-						Text = data.Text
+						Text = data.Text,
+						Order = (decimal)1 / materialCount,
+						IsRequireOtherMaterials = data.IsRequireOtherMaterials,
+						IsOneTime = data.IsOneTime
 					};
-
-					var repo = new BaseRepository<EducationMaterial>(db);
+					
 					var materialId = await repo.CreateAsync(material);
 
 					if (Request.Form.Files.Count > 0)
@@ -146,19 +158,44 @@ namespace WebApi.Controllers
 				using (var db = new DataContext(options))
 				{
 					var repo = new BaseRepository<EducationMaterial>(db);
-
-					var materials = repo.GetByPredicate(x => x.Id == model.CurrentMaterialId
-						|| x.Id == model.PreviousMaterialId
-						|| x.Id == model.NextMaterialId);
-
+					var materials = (await repo.GetAsync()).OrderByDescending(x => x.Order);
 					var current = materials.Where(x => x.Id == model.CurrentMaterialId).FirstOrDefault();
-					var prev = materials.Where(x => x.Id == model.PreviousMaterialId).FirstOrDefault();
-					var next = materials.Where(x => x.Id == model.NextMaterialId).FirstOrDefault();
 
-					if (current == null || prev == null || next == null)
+					if (current == null)
 						throw new Exception("Карточка не найдена");
 
-					current.Order = (prev.Order - next.Order) / 2 + next.Order;
+					EducationMaterial? prev = null;
+					EducationMaterial? next = null;
+
+					if (model.PreviousMaterialId.HasValue)
+						prev = materials.Where(x => x.Id == model.PreviousMaterialId.Value).FirstOrDefault();
+					
+					if (model.NextMaterialId.HasValue)
+						next = materials.Where(x => x.Id == model.NextMaterialId.Value).FirstOrDefault();
+
+					if (next == null)
+					{
+						var last = materials.Last();
+
+						if (last.Order == 0)
+						{
+							last.Order = materials.ElementAt(materials.Count() - 2).Order / 2;
+							await repo.UpdateAsync(last);
+						}
+
+						current.Order = last.Order / 2;
+					}
+					else if (prev == null)
+					{
+						var first = materials.First();
+						var second = materials.ElementAt(1);
+						first.Order = (1 - second.Order) / 2 + second.Order;
+						await repo.UpdateAsync(first);
+						current.Order = 1;
+					}
+					else
+						current.Order = (prev.Order - next.Order) / 2 + next.Order;
+					
 					await repo.UpdateAsync(current);
 					return await GetAsync();
 				}
@@ -170,12 +207,19 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPut]
+		[DisableRequestSizeLimit]
 		public async Task<IActionResult> PutAsync([FromForm] EducationMaterialModel data)
 		{
 			try
 			{
 				if (string.IsNullOrEmpty(data.Title) || data.Type == (int)EducationMaterialType.NotSet)
 					throw new Exception("Не заданы обязательные поля Заголовок и Тип материала");
+
+				if (data.Title.Length > 100)
+					throw new Exception($"Заголовок не может быть длинее 100 символов. Сейчас {data.Title.Length} символов");
+
+				if (!string.IsNullOrEmpty(data.Description) && data.Description.Length > 320)
+					throw new Exception($"Описание не может быть длинее 320 символов. Сейчас {data.Description.Length} символов");
 
 				if (string.IsNullOrEmpty(data.Text) && data.Type == (int)EducationMaterialType.Text)
 					throw new Exception("Для материала с типом Текст необходимо заполнить поле Текст");
@@ -199,6 +243,8 @@ namespace WebApi.Controllers
 					material.IsFinal = data.IsFinal;
 					material.SurveyId = data.SurveyId;
 					material.Text = data.Text;
+					material.IsOneTime = data.IsOneTime;
+					material.IsRequireOtherMaterials = data.IsRequireOtherMaterials;
 
 					if (Request.Form.Files.Count > 0)
 					{
@@ -232,6 +278,12 @@ namespace WebApi.Controllers
 
 				using (var db = new DataContext(options))
 				{
+					var logRepo = new BaseRepository<Log>(db);
+					var logs = logRepo.GetByPredicate(x => x.EducationMaterialId == id);
+
+					foreach (var log in logs)
+						await logRepo.DeleteAsync(log.Id);
+
 					var repo = new BaseRepository<EducationMaterial>(db);
 					await repo.DeleteAsync(id);
 					return Ok();
@@ -273,6 +325,43 @@ namespace WebApi.Controllers
 			}
 
 			return null;
+		}
+
+		[HttpGet]
+		[Route("reorder")]
+		public async Task<IActionResult> ReorderAsync()
+		{
+			try
+			{
+				var options = _dataContextOptionsHelper.GetDataContextOptions();
+
+				using (var db = new DataContext(options))
+				{
+					var repo = new BaseRepository<EducationMaterial>(db);
+					var materials = (await repo.GetAsync()).OrderByDescending(x => x.Id);
+					var count = materials.Count();
+
+					if (count < 2)
+						return Ok();
+
+					decimal step = (decimal)1 / count;
+					decimal currentOrder = step;
+
+					foreach (var material in materials)
+					{ 
+						material.Order = currentOrder;
+						await repo.UpdateAsync(material);
+						currentOrder += step;
+					}
+
+					return Ok();
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return BadRequest();
+			}
 		}
 	}
 }

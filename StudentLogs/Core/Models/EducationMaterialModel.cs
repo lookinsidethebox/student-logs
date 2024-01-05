@@ -8,6 +8,8 @@
 		public int Type { get; set; }
 		public bool IsFirst { get; set; }
 		public bool IsFinal { get; set; }
+		public bool IsOneTime { get; set; }
+		public bool IsRequireOtherMaterials { get; set; }
 		public string? Text { get; set; }
 		public int? SurveyId { get; set; }
 	}

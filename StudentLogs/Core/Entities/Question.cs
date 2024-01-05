@@ -8,5 +8,7 @@
 		public string Value { get; set; } = null!;
 
 		public bool HasAnswers { get; set; }
+
+		public bool WithoutAnswers { get; set; }
 	}
 }

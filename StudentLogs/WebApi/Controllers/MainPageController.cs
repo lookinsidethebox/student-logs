@@ -79,6 +79,11 @@ namespace WebApi.Controllers
 				_logger.LogError(uae, uae.Message);
 				return Unauthorized();
 			}
+			catch (AccessViolationException ave)
+			{
+				_logger.LogError(ave, ave.Message);
+				return Forbid();
+			}
 			catch (Exception ex)
 			{
 				_logger.LogError(ex, ex.Message);

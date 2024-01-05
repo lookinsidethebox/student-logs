@@ -10,5 +10,6 @@
 		public string? FilePath { get; set; }
 		public bool IsFirst { get; set; }
 		public bool IsFinal { get; set; }
+		public int? SurveyId { get; set; }
 	}
 }

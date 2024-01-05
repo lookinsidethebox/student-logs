@@ -3,6 +3,7 @@ using System;
 using Core.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Core.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20230407115132_add-without-answers-survey-field")]
+    partial class addwithoutanswerssurveyfield
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,12 +70,6 @@ namespace Core.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsFirst")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsOneTime")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsRequireOtherMaterials")
                         .HasColumnType("boolean");
 
                     b.Property<decimal>("Order")
@@ -172,9 +168,6 @@ namespace Core.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("RandomOrder")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Title")
                         .IsRequired()

@@ -49,7 +49,7 @@ namespace WebApi.Controllers
 							Role = (int)x.Role,
 							RoleText = x.Role.ToString(),
 							SortType = (int)x.SortType,
-							SortText = x.Role.ToString()
+							SortText = x.SortType.ToString()
 						}));
 				}
 			}
@@ -235,6 +235,18 @@ namespace WebApi.Controllers
 
 				using (var db = new DataContext(options))
 				{
+					var userAnswersRepo = new BaseRepository<UserAnswer>(db);
+					var userAnswers = userAnswersRepo.GetByPredicate(x => x.UserId == id);
+
+					foreach (var answer in userAnswers)
+						await userAnswersRepo.DeleteAsync(answer.Id);
+
+					var logRepo = new BaseRepository<Log>(db);
+					var logs = logRepo.GetByPredicate(x => x.UserId == id);
+
+					foreach (var log in logs)
+						await logRepo.DeleteAsync(log.Id);
+
 					var repo = new BaseRepository<User>(db);
 					await repo.DeleteAsync(id);
 					return Ok();

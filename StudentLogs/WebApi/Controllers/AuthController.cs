@@ -1,4 +1,5 @@
-﻿using Core.Services;
+﻿using Core.Abstractions;
+using Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,12 +12,15 @@ namespace WebApi.Controllers
 	{
 		private readonly IAuthService _authService;
 		private readonly ILogger<AuthController> _logger;
+		private readonly ISeed _seed;
 
 		public AuthController(IAuthService authService,
-			ILogger<AuthController> logger)
+			ILogger<AuthController> logger,
+			ISeed seed)
 		{
 			_authService = authService;
 			_logger = logger;
+			_seed = seed;
 		}
 
 		[HttpGet]
@@ -42,6 +46,22 @@ namespace WebApi.Controllers
 				return Ok(json);
 			}
 			catch(Exception ex)
+			{
+				_logger.LogError(ex, ex.Message);
+				return NotFound();
+			}
+		}
+
+		[HttpGet]
+		[Route("seed")]
+		public async Task<IActionResult> GetSeed()
+		{
+			try
+			{
+				await _seed.SeedAsync();
+				return Ok();
+			}
+			catch (Exception ex)
 			{
 				_logger.LogError(ex, ex.Message);
 				return Unauthorized();

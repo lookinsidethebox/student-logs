@@ -1,7 +1,6 @@
 using Core;
 using Core.Abstractions;
 using Core.EF;
-using Core.Extensions;
 using Core.Helpers;
 using Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,6 +30,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(
+        policy =>
+        {
+            policy
+                .WithOrigins("http://sequencing-project.ru")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<DataContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -42,11 +53,8 @@ builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddSingleton<IDataContextOptionsHelper, DataContextOptionsHelper>();
 builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton<IEducationMaterialService, EducationMaterialService>();
-
-builder.Services.AddSeed<SeedData>();
-
-var serviceProvider = builder.Services.BuildServiceProvider();
-await serviceProvider.RunSeedAsync();
+builder.Services.AddSingleton<ISeed, SeedData>();
+builder.Services.AddSingleton<IReportService, ReportService>();
 
 var app = builder.Build();
 
@@ -57,6 +65,7 @@ using (var scope = app.Services.CreateScope())
     context.Database.Migrate();
 }
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -72,7 +81,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = FileHelper.FILES_PATH
 });
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 app.MapControllers().RequireAuthorization();
 

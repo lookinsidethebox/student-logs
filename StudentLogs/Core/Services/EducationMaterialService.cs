@@ -36,7 +36,7 @@ namespace Core.Services
 				var query = materials.OrderBy(x => !x.IsFirst).ThenBy(x => x.IsFinal);
 				var result = new List<EducationMaterialListItemModel>();
 
-				var logIds = await db.Set<Log>().AsNoTracking()
+				var materialIdsWithLogs = await db.Set<Log>().AsNoTracking()
 					.Where(x => x.UserId == userId)
 					.Where(x => x.EducationMaterial.Type != EducationMaterialType.Survey
 						|| x.Type == LogType.SurveyCompleted && x.EducationMaterial.Type == EducationMaterialType.Survey)
@@ -44,97 +44,54 @@ namespace Core.Services
 					.Distinct()
 					.ToListAsync();
 
-				if (sortType == SortType.ByTeacherChoice)
-				{
-					var list = query.ThenByDescending(x => x.Order)
-						.Select(x => new EducationMaterial
-						{
-							Id = x.Id,
-							Description = x.Description,
-							Title = x.Title,
-							Type = x.Type,
-							FilePath = x.FilePath
-						});
-
-					var prevIsActive = true;
-
-					foreach (var item in list)
+				var list = query.ThenByDescending(x => x.Order)
+					.Select(x => new EducationMaterial
 					{
-						var logExists = logIds.Where(x => x == item.Id).FirstOrDefault() != 0;
+						Id = x.Id,
+						Description = x.Description,
+						Title = x.Title,
+						Type = x.Type,
+						FilePath = x.FilePath,
+						SurveyId = x.SurveyId,
+						IsFinal = x.IsFinal,
+						IsFirst = x.IsFirst,
+						IsRequireOtherMaterials = x.IsRequireOtherMaterials,
+						IsOneTime = x.IsOneTime
+					});
 
-						var model = new EducationMaterialListItemModel
-						{
-							Id = item.Id,
-							Description = item.Description,
-							IsActive = prevIsActive && logExists || isAdmin,
-							Title = item.Title,
-							Type = (int)item.Type,
-							FilePath = item.FilePath,
-							IsFinal = item.IsFinal,
-							IsFirst = item.IsFirst
-						};
+				var hasUnwatchedMaterials = list
+					.Where(x => !x.IsRequireOtherMaterials && !materialIdsWithLogs.Contains(x.Id))
+					.Count() > 0;
 
-						result.Add(model);
-						prevIsActive = model.IsActive;
-					}
+				var isFirst = true;
+				var nextIsActive = false;
 
-					return result;
-				}
-				else
+				foreach (var item in list)
 				{
-					var random = new Random();
+					var isVisited = materialIdsWithLogs.Where(x => x == item.Id).FirstOrDefault() != 0;
+					var shouldBeDisabled = isVisited && item.IsOneTime || hasUnwatchedMaterials && item.IsRequireOtherMaterials;
 
-					var list = query.ThenBy(x => random.Next())
-						.Select(x => new EducationMaterial
-						{
-							Id = x.Id,
-							Description = x.Description,
-							Title = x.Title,
-							Type = x.Type,
-							IsFinal = x.IsFinal,
-							IsFirst = x.IsFirst,
-							FilePath = x.FilePath
-						});
-
-					var firstMaterialIds = list
-						.Where(x => x.IsFirst)
-						.Select(x => x.Id);
-
-					var notFinalMaterialIds = list
-						.Where(x => !x.IsFinal)
-						.Select(x => x.Id);
-
-					var allFirstMaterialsPassed = firstMaterialIds.All(x => logIds.Contains(x));
-					var allNotFinalMaterialsPassed = notFinalMaterialIds.All(x => logIds.Contains(x));
-					var isFirst = true;
-
-					foreach (var item in list)
+					var model = new EducationMaterialListItemModel
 					{
-						var isActive = isFirst
-							|| item.IsFirst
-							|| allFirstMaterialsPassed && !item.IsFinal
-							|| allNotFinalMaterialsPassed && item.IsFinal;
+						Id = item.Id,
+						Description = item.Description,
+						IsActive = nextIsActive && !shouldBeDisabled || isAdmin || isFirst,
+						Title = item.Title,
+						Type = (int)item.Type,
+						FilePath = item.FilePath,
+						IsFinal = item.IsFinal,
+						IsFirst = item.IsFirst,
+						SurveyId = item.SurveyId
+					};
 
-						if (isFirst)
-							isFirst = false;
+					result.Add(model);
+					nextIsActive = sortType == SortType.ByRandom || isVisited && (model.IsActive || shouldBeDisabled);
 
-						var model = new EducationMaterialListItemModel
-						{
-							Id = item.Id,
-							Description = item.Description,
-							IsActive = isActive || isAdmin,
-							Title = item.Title,
-							Type = (int)item.Type,
-							FilePath = item.FilePath,
-							IsFinal = item.IsFinal,
-							IsFirst = item.IsFirst
-						};
-
-						result.Add(model);
-					}
-
-					return result;
+					if (isFirst)
+						isFirst = false;
 				}
+
+				return result;
 			}
 		}
 
@@ -142,8 +99,8 @@ namespace Core.Services
 		{
 			var all = await GetEducationMaterialsForUserAsync(userId, sortType, isAdmin);
 
-			if (!all.Where(x => x.Id == id && x.IsActive).Any())
-				throw new UnauthorizedAccessException();
+			if (!all.Where(x => x.Id == id && x.IsActive).Any() && !isAdmin)
+				throw new AccessViolationException();
 
 			var options = _dataContextOptionsHelper.GetDataContextOptions();
 

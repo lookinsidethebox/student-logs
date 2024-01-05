@@ -110,18 +110,26 @@ namespace WebApi.Controllers
 						(int?, string?) answer = (null, null);
 						var hasUserAnswer = isCompleted && groupped.TryGetValue(q.Id, out answer);
 
+						var questionAnswers = !q.WithoutAnswers && q.HasAnswers && answers.TryGetValue(q.Id, out var ans)
+								? ans.Select(x => new AnswerModel
+								{
+									Id = x.Id,
+									Title = x.Value
+								})
+								: new List<AnswerModel>();
+
+						if (survey.RandomOrder)
+							questionAnswers = questionAnswers.OrderBy(x => random.Next());
+						else
+							questionAnswers = questionAnswers.OrderBy(x => x.Id);
+
 						var model = new QuestionModel
 						{
 							Id = q.Id,
 							Title = q.Value,
-							Value = hasUserAnswer ? answer.Item1.HasValue ? answer.Item1.ToString() : answer.Item2 : null,
-							Answers = q.HasAnswers && answers.TryGetValue(q.Id, out var ans) 
-								? ans.Select(x => new AnswerModel
-									{ 
-										Id = x.Id,
-										Title = x.Value
-									}).OrderBy(x => random.Next())
-								: new List<AnswerModel>()
+							WithoutAnswers = q.WithoutAnswers,
+							Value = !q.WithoutAnswers && hasUserAnswer ? answer.Item1.HasValue ? answer.Item1.ToString() : answer.Item2 : null,
+							Answers = questionAnswers
 						};
 
 						questionModels.Add(model);
@@ -131,8 +139,11 @@ namespace WebApi.Controllers
 					{
 						Id = survey.Id,
 						Title = survey.Title,
-						IsCompleted = true,
-						Questions = questionModels.OrderBy(x => random.Next())
+						IsCompleted = isCompleted,
+						RandomOrder = survey.RandomOrder,
+						Questions = survey.RandomOrder 
+							? questionModels.OrderBy(x => random.Next())
+							: questionModels.OrderBy(x => x.Id)
 					};
 
 					return Ok(result);
@@ -156,20 +167,21 @@ namespace WebApi.Controllers
 				using (var db = new DataContext(options))
 				{
 					var surveyRepo = new BaseRepository<Survey>(db);
-					var survey = new Survey { Title = data.Title };
+					var survey = new Survey { Title = data.Title, RandomOrder = data.RandomOrder };
 					survey.Id = await surveyRepo.CreateAsync(survey);
 					var questionRepo = new BaseRepository<Question>(db);
 					var answerRepo = new BaseRepository<Answer>(db);
 
 					foreach (var q in data.Questions)
 					{
-						var hasAnswers = q.Answers != null && q.Answers.Count > 0;
+						var hasAnswers = !q.WithoutAnswers && q.Answers != null && q.Answers.Count > 0;
 
 						var question = new Question
 						{
 							SurveyId = survey.Id,
 							Value = q.Title,
-							HasAnswers = hasAnswers
+							HasAnswers = hasAnswers,
+							WithoutAnswers = q.WithoutAnswers
 						};
 
 						question.Id = await questionRepo.CreateAsync(question);
@@ -281,12 +293,23 @@ namespace WebApi.Controllers
 					if (survey == null)
 						throw new Exception($"Опрос с id = {data.Id} не найден");
 
+					var updateSurvey = false;
+
 					if (survey.Title != data.Title)
 					{
 						survey.Title = data.Title;
-						await surveyRepo.UpdateAsync(survey);
+						updateSurvey = true;
 					}
 
+					if (survey.RandomOrder != data.RandomOrder)
+					{
+						survey.RandomOrder = data.RandomOrder;
+						updateSurvey = true;
+					}
+
+					if (updateSurvey)
+						await surveyRepo.UpdateAsync(survey);
+					
 					await RemoveAllQuestionsAndAnswers(data.Id, db);
 					var questionRepo = new BaseRepository<Question>(db);
 					var answerRepo = new BaseRepository<Answer>(db);
@@ -299,7 +322,8 @@ namespace WebApi.Controllers
 						{
 							SurveyId = data.Id,
 							Value = q.Title,
-							HasAnswers = hasAnswers
+							HasAnswers = hasAnswers,
+							WithoutAnswers = q.WithoutAnswers
 						};
 
 						var questionId = await questionRepo.CreateAsync(question);
@@ -340,6 +364,16 @@ namespace WebApi.Controllers
 				using (var db = new DataContext(options))
 				{
 					await RemoveAllQuestionsAndAnswers(id, db);
+
+					var materialRepo = new BaseRepository<EducationMaterial>(db);
+					var materials = materialRepo.GetByPredicate(x => x.SurveyId == id);
+
+					foreach (var material in materials)
+					{
+						material.SurveyId = null;
+						await materialRepo.UpdateAsync(material);
+					}
+
 					var surveyRepo = new BaseRepository<Survey>(db);
 					await surveyRepo.DeleteAsync(id);
 					return Ok();
@@ -354,6 +388,12 @@ namespace WebApi.Controllers
 
 		private async Task RemoveAllQuestionsAndAnswers(int surveyId, DataContext db)
 		{
+			var userAnswersRepo = new BaseRepository<UserAnswer>(db);
+			var userAnswers = userAnswersRepo.GetByPredicate(x => x.SurveyId == surveyId);
+
+			foreach (var answer in userAnswers)
+				await userAnswersRepo.DeleteAsync(answer.Id);
+
 			var questionRepo = new BaseRepository<Question>(db);
 			var questions = questionRepo.GetByPredicate(x => x.SurveyId == surveyId);
 

@@ -22,6 +22,10 @@ namespace Core.Entities
 
 		public bool IsFinal { get; set; }
 
+		public bool IsOneTime { get; set; }
+
+		public bool IsRequireOtherMaterials { get; set; }
+
 		public string? Text { get; set; }
 
 		public string? FilePath { get; set; }

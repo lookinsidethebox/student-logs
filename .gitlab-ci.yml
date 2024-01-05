@@ -1,0 +1,51 @@
+stages:
+  - build
+  - deploy
+
+
+build:
+  image: docker/compose:alpine-1.27.2
+  stage: build
+  services:
+    - docker:dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker-compose -f docker-compose.ci.yml pull
+    - docker-compose -f docker-compose.ci.yml build
+    - docker-compose -f docker-compose.ci.yml push
+  only:
+    refs:
+      - main
+      
+
+deploy:
+  only:
+    refs:
+      - main
+  stage: deploy
+  image: alpine:3.12
+  variables:
+    DEPLOY_DIR: /var/www/sequencing-project
+    SSH_OPTIONS: >
+      -o BatchMode=yes
+      -o ConnectTimeout=10
+      -o ConnectionAttempts=3
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - ssh-add -q - < "$SSH_PRIVATE_KEY"
+    - mkdir -m 700 ~/.ssh
+    - ssh-keyscan $SSH_HOST > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - set -x
+    - export _SSH="ssh $SSH_OPTIONS -q -p ${SSH_PORT:-22} $SSH_USER@$SSH_HOST"
+    - $_SSH install -vd "$DEPLOY_DIR"
+    - $_SSH docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - |
+      $_SSH -T << EOF
+      set -ex
+      cd $DEPLOY_DIR
+      docker-compose pull
+      docker-compose up -d --remove-orphans
+      EOF
